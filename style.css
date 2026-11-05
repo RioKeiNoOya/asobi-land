@@ -87,3 +87,12 @@ html,body,#app{height:100%;overflow:hidden;overscroll-behavior:none}
 #kana .kana-grid .kana-mark{background:#f8a6d1!important;color:#742956}
 #kana .kana-grid .kana-mark:disabled{opacity:.5}
 @media(max-height:650px) and (orientation:landscape){#coloring .paint-tools>button{min-height:43px;padding:7px 9px;font-size:14px}#coloring .brush-choice{width:45px;height:45px;min-width:45px;min-height:45px}}
+
+/* v8: palette labels above color swatches, retain fixed-screen layout */
+#coloring .palette-side{width:clamp(155px,25vw,265px);display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0}
+#coloring .palette-side .palette{width:100%;min-width:0}
+#coloring .color-name-display{min-height:49px;text-align:center;background:#fff8df;border:2px solid #fff;border-radius:13px;padding:3px 5px;display:flex;flex-direction:column;justify-content:center}
+#paintColorName{font-size:clamp(15px,2.1vw,23px);font-weight:800;line-height:1.25}
+#paintColorEnglish{font-size:clamp(10px,1.3vw,13px);color:#755c48;line-height:1.3}
+#coloring .brush-buttons{display:flex;gap:4px}
+@media(max-height:650px) and (orientation:landscape){#coloring .palette-side{gap:4px}#coloring .color-name-display{min-height:37px;padding:1px 4px}}

@@ -19,34 +19,29 @@ const colorPreset=[['おうち',()=>simpleArt('house')]];
 async function refreshExtra(){if(!exdb)return;colorItems=await exOp('color','readonly',s=>s.getAll());traceItems=await exOp('trace','readonly',s=>s.getAll());renderColors();renderTraceManage()}
 function renderColors(){const root=$('colorTiles');root.replaceChildren();colorPreset.forEach(([label,get])=>makeTile(root,get(),()=>beginPaint(get())));colorItems.forEach(it=>makeTile(root,it.data,()=>beginPaint(it.data)));const manage=$('colorManage');manage.replaceChildren();colorItems.forEach(it=>makeTile(manage,it.data,()=>{},async()=>{await exOp('color','readwrite',s=>s.delete(it.id));await refreshExtra()}))}
 $('openColor').onclick=()=>show('colorGallery');$('openKana').onclick=()=>{renderKana();show('kana')};$('openTrace').onclick=()=>show('traceMenu');
-$('colorFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{const data=normalizedImage(await loadPicture(file),true);await exOp('color','readwrite',s=>s.put({id:exId(),data}));await refreshExtra()}catch(err){alert('画像を登録できませんでした')}};
+$('colorFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{const data=normalizedImage(await loadPicture(file),false);await exOp('color','readwrite',s=>s.put({id:exId(),data}));await refreshExtra()}catch(err){alert('画像を登録できませんでした')}};
 /* Coloring: separate outline and paint layers, fill with a small gap closing mask. */
 const paint=$('paintCanvas'),pctx=paint.getContext('2d'),paintLayer=document.createElement('canvas'),px=paintLayer.getContext('2d',{willReadFrequently:true});paintLayer.width=paintLayer.height=600;
-let outline=new Image(),outlineLayer=null,outlineData=null,paintTool='pen',paintColor='#e93432',brush=24,paintHistory=[],paintFuture=[],painting=false,lastPaint=null,paintPointer=null,strokePoints=[],strokeBase=null;
+let outline=new Image(),outlineLayer=null,outlineData=null,paintTool='pen',paintColor='#e93432',brush=24,paintHistory=[],paintFuture=[],painting=false,lastPaint=null,paintPointer=null;
 const coupy=[['しろ','#ffffff'],['きいろ','#ffe23c'],['だいだいいろ','#f28a29'],['あか','#e93432'],['ももいろ','#f6a1bb'],['うすだいだい','#f4c59d'],['ちゃいろ','#8e523a'],['こげちゃいろ','#573d34'],['きみどり','#9bc947'],['みどり','#269b50'],['ふかみどり','#156c45'],['みずいろ','#7dd4e7'],['あお','#2876cb'],['ぐんじょういろ','#334aa5'],['むらさき','#8a59ad'],['あかむらさき','#b75493'],['はいいろ','#a0a0a0'],['くろ','#202020'],['おうどいろ','#c6a050'],['やまぶきいろ','#f5ba2f'],['しゅいろ','#ed5837'],['うすむらさき','#c6a2d8'],['あいいろ','#334e80'],['ねずみいろ','#777b7c']];
+const coupyEnglish=["White", "Yellow", "Orange", "Red", "Pink", "Peach", "Brown", "Dark Brown", "Yellow Green", "Green", "Dark Green", "Light Blue", "Blue", "Ultramarine", "Purple", "Red Violet", "Gray", "Black", "Ochre", "Golden Yellow", "Vermilion", "Lavender", "Indigo", "Slate Gray"];
 let speakEnabled=true;let speechQueueToken=0;
 function say(t){if(!speakEnabled||!('speechSynthesis'in window))return;try{const token=++speechQueueToken;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=.92;u.pitch=1;const voices=speechSynthesis.getVoices();const jp=voices.find(v=>v.lang==='ja-JP'&&v.localService)||voices.find(v=>v.lang.startsWith('ja'));if(jp)u.voice=jp; // A tiny deferred enqueue avoids iOS cancel/speak races.
  setTimeout(()=>{if(token===speechQueueToken&&speakEnabled)speechSynthesis.speak(u)},75)}catch(e){}}
-function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();say(name)};root.append(b)})}palette();
+function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();say(name)};root.append(b)});const selected=coupy.findIndex(c=>c[1]===paintColor);$('paintColorName').textContent=selected<0?'いろを えらぼう':coupy[selected][0];$('paintColorEnglish').textContent=selected<0?'Choose a color':coupyEnglish[selected]}palette();
 function paintRender(){pctx.fillStyle='white';pctx.fillRect(0,0,600,600);pctx.drawImage(paintLayer,0,0);if(outlineLayer)pctx.drawImage(outlineLayer,0,0,600,600)}
 function snapshot(){paintHistory.push(px.getImageData(0,0,600,600));if(paintHistory.length>16)paintHistory.shift();paintFuture=[]}
-function beginPaint(src){outlineLayer=null;outline=new Image();outline.onload=()=>{const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.drawImage(outline,0,0,600,600);const mask=x.getImageData(0,0,600,600);outlineData=new Uint8ClampedArray(mask.data);for(let k=0;k<mask.data.length;k+=4){const v=(mask.data[k]+mask.data[k+1]+mask.data[k+2])/3;mask.data[k]=mask.data[k+1]=mask.data[k+2]=0;mask.data[k+3]=v<190?255:0}x.putImageData(mask,0,0);outlineLayer=c;px.clearRect(0,0,600,600);paintHistory=[];paintFuture=[];paintRender();show('coloring')};outline.src=src}
+function beginPaint(src){outlineLayer=null;outline=new Image();outline.onload=()=>{const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.drawImage(outline,0,0,600,600);const mask=x.getImageData(0,0,600,600);outlineData=new Uint8ClampedArray(mask.data);for(let k=0;k<mask.data.length;k+=4){const v=(mask.data[k]+mask.data[k+1]+mask.data[k+2])/3;mask.data[k]=mask.data[k+1]=mask.data[k+2]=0;mask.data[k+3]=Math.max(0,Math.min(255,(245-v)*2.8))}x.putImageData(mask,0,0);outlineLayer=c;px.clearRect(0,0,600,600);paintHistory=[];paintFuture=[];paintRender();show('coloring')};outline.src=src}
 function pointOnCanvas(e,c){const r=c.getBoundingClientRect();return{x:Math.max(0,Math.min(599,(e.clientX-r.left)*600/r.width)),y:Math.max(0,Math.min(599,(e.clientY-r.top)*600/r.height))}}
 function hexRgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
-// Consistent stroke preview/final appearance: render a continuous path from sampled points.
-// Pencil pressure is intentionally not applied because iOS may report different pressure
-// on the final pointer event, causing a visible jump at pen-up.
-function drawPaint(a,b,pressure){
- if(!strokeBase)return;
- const prev=strokePoints[strokePoints.length-1];if(!prev||Math.hypot(prev.x-b.x,prev.y-b.y)>.15)strokePoints.push({x:b.x,y:b.y});
- px.putImageData(strokeBase,0,0);px.save();
- px.globalCompositeOperation=paintTool==='eraser'?'destination-out':'source-over';
+// Incremental canvas strokes avoid re-rendering the entire history for every Pencil sample.
+// Pencil pressure stays disabled: stroke width/opacity remain stable while drawing and after release.
+function drawPaintSegment(a,b){
+ px.save();px.globalCompositeOperation=paintTool==='eraser'?'destination-out':'source-over';
  px.strokeStyle=paintTool==='eraser'?'#000':paintColor;px.fillStyle=px.strokeStyle;
- px.globalAlpha=paintTool==='eraser'?1:.85;
- px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
- if(strokePoints.length===1){const pt=strokePoints[0];px.beginPath();px.arc(pt.x,pt.y,brush/2,0,Math.PI*2);px.fill()}
- else{px.beginPath();px.moveTo(strokePoints[0].x,strokePoints[0].y);for(let i=1;i<strokePoints.length;i++){const q=strokePoints[i];px.lineTo(q.x,q.y)}px.stroke()}
- px.restore();paintRender()
+ px.globalAlpha=paintTool==='eraser'?1:.9;px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
+ px.beginPath();px.moveTo(a.x,a.y);px.lineTo(b.x,b.y);px.stroke();
+ px.restore();
 }
 function bucket(x,y){if(!outlineData)return;const w=600,h=600,start=Math.floor(y)*w+Math.floor(x);const blocked=new Uint8Array(w*h);for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const i=yy*w+xx,k=i*4;const v=(outlineData[k]+outlineData[k+1]+outlineData[k+2])/3;if(v<190)blocked[i]=1}
 // Expand dark strokes to seal minor gaps before flood filling.
@@ -56,9 +51,9 @@ if(solid[start])return;const seen=new Uint8Array(w*h),stack=new Int32Array(w*h);
 const filled=new Uint8Array(w*h);for(const i of ids)filled[i]=1;
 const expanded=ids.slice();for(const i of ids){const xx=i%w,yy=(i/w)|0;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){if(dx*dx+dy*dy>9)continue;const nx=xx+dx,ny=yy+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;if(!filled[j]){filled[j]=1;expanded.push(j)}}}
 const d=px.getImageData(0,0,w,h),rgb=hexRgb(paintColor);for(const i of expanded){const k=i*4;d.data[k]=rgb[0];d.data[k+1]=rgb[1];d.data[k+2]=rgb[2];d.data[k+3]=255}px.putImageData(d,0,0);paintRender()}
-paint.addEventListener('pointerdown',e=>{if(painting)return;e.preventDefault();paint.setPointerCapture(e.pointerId);painting=true;paintPointer=e.pointerId;const p=pointOnCanvas(e,paint);snapshot();if(paintTool==='bucket'){bucket(p.x,p.y);painting=false;return}lastPaint=p;strokeBase=px.getImageData(0,0,600,600);strokePoints=[{x:p.x,y:p.y,p:e.pointerType==='pen'?e.pressure:null}];drawPaint(p,p,e.pointerType==='pen'?e.pressure:null)});
-paint.addEventListener('pointermove',e=>{if(!painting||e.pointerId!==paintPointer||!lastPaint)return;e.preventDefault();const events=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[e];for(const ev of events){const p=pointOnCanvas(ev,paint);drawPaint(lastPaint,p,null);lastPaint=p}});
-['pointerup','pointercancel','lostpointercapture'].forEach(t=>paint.addEventListener(t,e=>{if(e.pointerId===paintPointer){painting=false;lastPaint=null;paintPointer=null;strokeBase=null;strokePoints=[]}}));
+paint.addEventListener('pointerdown',e=>{if(painting)return;e.preventDefault();paint.setPointerCapture(e.pointerId);painting=true;paintPointer=e.pointerId;const p=pointOnCanvas(e,paint);snapshot();if(paintTool==='bucket'){bucket(p.x,p.y);painting=false;paintPointer=null;return}lastPaint=p;drawPaintSegment(p,p);paintRender()});
+paint.addEventListener('pointermove',e=>{if(!painting||e.pointerId!==paintPointer||!lastPaint)return;e.preventDefault();const events=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[e];for(const ev of events){const p=pointOnCanvas(ev,paint);if(Math.hypot(p.x-lastPaint.x,p.y-lastPaint.y)<.2)continue;drawPaintSegment(lastPaint,p);lastPaint=p}paintRender()});
+['pointerup','pointercancel','lostpointercapture'].forEach(t=>paint.addEventListener(t,e=>{if(e.pointerId===paintPointer){painting=false;lastPaint=null;paintPointer=null;paintRender()}}));
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{paintTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('chosen',x===b))});
 document.querySelectorAll('[data-brush]').forEach(b=>b.onclick=()=>{brush=Number(b.dataset.brush);document.querySelectorAll('[data-brush]').forEach(x=>x.classList.toggle('chosen',x===b))});
 $('paintUndo').onclick=()=>{if(!paintHistory.length)return;paintFuture.push(px.getImageData(0,0,600,600));px.putImageData(paintHistory.pop(),0,0);paintRender()};
@@ -106,9 +101,8 @@ function traceJudge(){
  const ratio=targets?matched/targets:0;const good=ratio>=.48;
  $('traceStatus').textContent=good?'🌟 できたね！':'💛 あとちょっと！';
  traceChime(good);
- if(good){traceCelebrate();tracePraise();traceClap()}
+ if(good){traceCelebrate();traceClap()}
 }
-function tracePraise(){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('わあ！');u.lang='ja-JP';u.rate=.9;setTimeout(()=>speechSynthesis.speak(u),120)}catch(e){}}
 function traceClap(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=new A(),len=Math.floor(a.sampleRate*.095),buf=a.createBuffer(1,len,a.sampleRate),data=buf.getChannelData(0);for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.6);[0,.12,.27,.40,.57,.71].forEach((d,i)=>{const src=a.createBufferSource(),filter=a.createBiquadFilter(),gain=a.createGain();src.buffer=buf;filter.type='highpass';filter.frequency.value=750;gain.gain.value=.13+(i%3)*.025;src.connect(filter);filter.connect(gain);gain.connect(a.destination);src.start(a.currentTime+d)});setTimeout(()=>a.close(),1600)}catch(e){}}
 function traceCelebrate(){const area=$('tracing');const layer=document.createElement('div');layer.className='trace-confetti-layer';const shapes=['🎊','✨','🎉','🟡','🩷','💛','🟢','🔵'];for(let i=0;i<46;i++){const bit=document.createElement('span');bit.className='trace-confetti';bit.textContent=shapes[i%shapes.length];bit.style.left=(i*37%100)+'%';bit.style.animationDelay=(i%11*.08)+'s';bit.style.animationDuration=(2+(i%5)*.2)+'s';layer.append(bit)}area.append(layer);setTimeout(()=>layer.remove(),4000)}
 function traceChime(good){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=new A();const notes=good?[523.25,659.25,783.99]:[392,440];notes.forEach((hz,i)=>{const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+i*.13;o.type='sine';o.frequency.value=hz;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.11,t+.018);g.gain.exponentialRampToValueAtTime(.0001,t+.22);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.24)});setTimeout(()=>a.close(),850)}catch(e){}}
