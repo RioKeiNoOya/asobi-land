@@ -28,18 +28,22 @@ const coupyEnglish=["White", "Yellow", "Orange", "Red", "Pink", "Peach", "Brown"
 let speakEnabled=true;let speechQueueToken=0;
 function say(t){if(!speakEnabled||!('speechSynthesis'in window))return;try{const token=++speechQueueToken;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=.92;u.pitch=1;const voices=speechSynthesis.getVoices();const jp=voices.find(v=>v.lang==='ja-JP'&&v.localService)||voices.find(v=>v.lang.startsWith('ja'));if(jp)u.voice=jp; // A tiny deferred enqueue avoids iOS cancel/speak races.
  setTimeout(()=>{if(token===speechQueueToken&&speakEnabled)speechSynthesis.speak(u)},75)}catch(e){}}
-function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();say(name)};root.append(b)});const selected=coupy.findIndex(c=>c[1]===paintColor);$('paintColorName').textContent=selected<0?'いろを えらぼう':coupy[selected][0];$('paintColorEnglish').textContent=selected<0?'Choose a color':coupyEnglish[selected]}palette();
+let englishNameMode=false;
+function sayEnglish(t){if(!speakEnabled||!('speechSynthesis' in window))return;try{const token=++speechQueueToken;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;const voices=speechSynthesis.getVoices();const en=voices.find(v=>v.lang.startsWith('en')&&v.localService)||voices.find(v=>v.lang.startsWith('en'));if(en)u.voice=en;setTimeout(()=>{if(token===speechQueueToken&&speakEnabled)speechSynthesis.speak(u)},75)}catch(e){}}
+function paintNameRefresh(){const i=coupy.findIndex(c=>c[1]===paintColor);const ja=i<0?'いろを えらぼう':coupy[i][0],en=i<0?'Choose a color':coupyEnglish[i];$('paintColorName').textContent=englishNameMode?en:ja;$('paintColorEnglish').textContent=englishNameMode?ja:en;$('paintColorName').lang=englishNameMode?'en':'ja';$('paintColorEnglish').lang=englishNameMode?'ja':'en';}
+$('paintNameSwitch').onclick=()=>{englishNameMode=!englishNameMode;paintNameRefresh();const i=coupy.findIndex(c=>c[1]===paintColor);if(i>=0){if(englishNameMode)sayEnglish(coupyEnglish[i]);else say(coupy[i][0]);}};
+function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();say(name)};root.append(b)});const selected=coupy.findIndex(c=>c[1]===paintColor);paintNameRefresh()}palette();
 function paintRender(){pctx.fillStyle='white';pctx.fillRect(0,0,600,600);pctx.drawImage(paintLayer,0,0);if(outlineLayer)pctx.drawImage(outlineLayer,0,0,600,600)}
 function snapshot(){paintHistory.push(px.getImageData(0,0,600,600));if(paintHistory.length>16)paintHistory.shift();paintFuture=[]}
 function beginPaint(src){outlineLayer=null;outline=new Image();outline.onload=()=>{const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.drawImage(outline,0,0,600,600);const mask=x.getImageData(0,0,600,600);outlineData=new Uint8ClampedArray(mask.data);for(let k=0;k<mask.data.length;k+=4){const v=(mask.data[k]+mask.data[k+1]+mask.data[k+2])/3;mask.data[k]=mask.data[k+1]=mask.data[k+2]=0;mask.data[k+3]=Math.max(0,Math.min(255,(245-v)*2.8))}x.putImageData(mask,0,0);outlineLayer=c;px.clearRect(0,0,600,600);paintHistory=[];paintFuture=[];paintRender();show('coloring')};outline.src=src}
 function pointOnCanvas(e,c){const r=c.getBoundingClientRect();return{x:Math.max(0,Math.min(599,(e.clientX-r.left)*600/r.width)),y:Math.max(0,Math.min(599,(e.clientY-r.top)*600/r.height))}}
 function hexRgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
 // Incremental canvas strokes avoid re-rendering the entire history for every Pencil sample.
-// Pencil pressure stays disabled: stroke width/opacity remain stable while drawing and after release.
-function drawPaintSegment(a,b){
+// Pencil pressure affects opacity only; stroke width stays fixed. Rendered ink is not rebuilt on release.
+function drawPaintSegment(a,b,pressure=0.5,pen=false){
  px.save();px.globalCompositeOperation=paintTool==='eraser'?'destination-out':'source-over';
  px.strokeStyle=paintTool==='eraser'?'#000':paintColor;px.fillStyle=px.strokeStyle;
- px.globalAlpha=paintTool==='eraser'?1:.9;px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
+ px.globalAlpha=paintTool==='eraser'?1:(pen?Math.min(.98,.65+.33*Math.max(0,Math.min(1,pressure))):.9);px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
  px.beginPath();px.moveTo(a.x,a.y);px.lineTo(b.x,b.y);px.stroke();
  px.restore();
 }
@@ -51,8 +55,8 @@ if(solid[start])return;const seen=new Uint8Array(w*h),stack=new Int32Array(w*h);
 const filled=new Uint8Array(w*h);for(const i of ids)filled[i]=1;
 const expanded=ids.slice();for(const i of ids){const xx=i%w,yy=(i/w)|0;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){if(dx*dx+dy*dy>9)continue;const nx=xx+dx,ny=yy+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;if(!filled[j]){filled[j]=1;expanded.push(j)}}}
 const d=px.getImageData(0,0,w,h),rgb=hexRgb(paintColor);for(const i of expanded){const k=i*4;d.data[k]=rgb[0];d.data[k+1]=rgb[1];d.data[k+2]=rgb[2];d.data[k+3]=255}px.putImageData(d,0,0);paintRender()}
-paint.addEventListener('pointerdown',e=>{if(painting)return;e.preventDefault();paint.setPointerCapture(e.pointerId);painting=true;paintPointer=e.pointerId;const p=pointOnCanvas(e,paint);snapshot();if(paintTool==='bucket'){bucket(p.x,p.y);painting=false;paintPointer=null;return}lastPaint=p;drawPaintSegment(p,p);paintRender()});
-paint.addEventListener('pointermove',e=>{if(!painting||e.pointerId!==paintPointer||!lastPaint)return;e.preventDefault();const events=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[e];for(const ev of events){const p=pointOnCanvas(ev,paint);if(Math.hypot(p.x-lastPaint.x,p.y-lastPaint.y)<.2)continue;drawPaintSegment(lastPaint,p);lastPaint=p}paintRender()});
+paint.addEventListener('pointerdown',e=>{if(painting)return;e.preventDefault();paint.setPointerCapture(e.pointerId);painting=true;paintPointer=e.pointerId;const p=pointOnCanvas(e,paint);snapshot();if(paintTool==='bucket'){bucket(p.x,p.y);painting=false;paintPointer=null;return}lastPaint=p;drawPaintSegment(p,p,e.pressure,e.pointerType==='pen');paintRender()});
+paint.addEventListener('pointermove',e=>{if(!painting||e.pointerId!==paintPointer||!lastPaint)return;e.preventDefault();const events=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[e];for(const ev of events){const p=pointOnCanvas(ev,paint);if(Math.hypot(p.x-lastPaint.x,p.y-lastPaint.y)<.2)continue;drawPaintSegment(lastPaint,p,ev.pressure,ev.pointerType==='pen');lastPaint=p}paintRender()});
 ['pointerup','pointercancel','lostpointercapture'].forEach(t=>paint.addEventListener(t,e=>{if(e.pointerId===paintPointer){painting=false;lastPaint=null;paintPointer=null;paintRender()}}));
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{paintTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('chosen',x===b))});
 document.querySelectorAll('[data-brush]').forEach(b=>b.onclick=()=>{brush=Number(b.dataset.brush);document.querySelectorAll('[data-brush]').forEach(x=>x.classList.toggle('chosen',x===b))});
@@ -118,3 +122,26 @@ exOpen().then(d=>{exdb=d;refreshExtra()}).catch(()=>alert('追加ゲームの画
 let uiAudio=null;
 function uiTap(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;uiAudio=uiAudio||new A();if(uiAudio.state==='suspended')uiAudio.resume();const t=uiAudio.currentTime,o=uiAudio.createOscillator(),g=uiAudio.createGain();o.type='sine';o.frequency.setValueAtTime(730,t);o.frequency.exponentialRampToValueAtTime(940,t+.065);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.055,t+.009);g.gain.exponentialRampToValueAtTime(.0001,t+.105);o.connect(g);g.connect(uiAudio.destination);o.start(t);o.stop(t+.11)}catch(e){}}
 document.addEventListener('pointerdown',e=>{const b=e.target.closest('button,.add-btn');if(b&&!b.disabled)uiTap()},{passive:true});
+
+// v9: update application assets without deleting the child's saved drawings/puzzles.
+(function(){
+ const btn=document.getElementById('appUpdate'),status=document.getElementById('updateStatus');
+ if(!btn)return;
+ btn.addEventListener('click',async()=>{
+  btn.disabled=true;status.textContent='こうしんを かくにんちゅう…';
+  try{
+   if('serviceWorker' in navigator){
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});}
+   }
+   // Only remove the application's own offline caches; do not touch IndexedDB or local storage.
+   if('caches' in window){
+    const names=await caches.keys();
+    await Promise.all(names.filter(n=>n.startsWith('asobi-land-')).map(n=>caches.delete(n)));
+   }
+   status.textContent='よみこみなおします';
+   const u=new URL(location.href);u.searchParams.set('refresh',String(Date.now()));
+   location.replace(u.href);
+  }catch(e){status.textContent='こうしんできませんでした。ネットをかくにんしてね';btn.disabled=false;}
+ });
+})();
