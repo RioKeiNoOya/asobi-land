@@ -30,9 +30,9 @@ function say(t){if(!speakEnabled||!('speechSynthesis'in window))return;try{const
  setTimeout(()=>{if(token===speechQueueToken&&speakEnabled)speechSynthesis.speak(u)},75)}catch(e){}}
 let englishNameMode=false;
 function sayEnglish(t){if(!speakEnabled||!('speechSynthesis' in window))return;try{const token=++speechQueueToken;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;const voices=speechSynthesis.getVoices();const en=voices.find(v=>v.lang.startsWith('en')&&v.localService)||voices.find(v=>v.lang.startsWith('en'));if(en)u.voice=en;setTimeout(()=>{if(token===speechQueueToken&&speakEnabled)speechSynthesis.speak(u)},75)}catch(e){}}
-function paintNameRefresh(){const i=coupy.findIndex(c=>c[1]===paintColor);const ja=i<0?'いろを えらぼう':coupy[i][0],en=i<0?'Choose a color':coupyEnglish[i];$('paintColorName').textContent=englishNameMode?en:ja;$('paintColorEnglish').textContent=englishNameMode?ja:en;$('paintColorName').lang=englishNameMode?'en':'ja';$('paintColorEnglish').lang=englishNameMode?'ja':'en';}
+function paintNameRefresh(){const i=coupy.findIndex(c=>c[1]===paintColor);const ja=i<0?'いろを えらぼう':coupy[i][0],en=i<0?'Choose a color':coupyEnglish[i];$('paintColorName').textContent=englishNameMode?en:ja;$('paintColorEnglish').textContent=englishNameMode?ja:en;$('paintColorName').lang=englishNameMode?'en':'ja';$('paintColorEnglish').lang=englishNameMode?'ja':'en';$('paintLangJa').classList.toggle('selected',!englishNameMode);$('paintLangEn').classList.toggle('selected',englishNameMode);}
 $('paintNameSwitch').onclick=()=>{englishNameMode=!englishNameMode;paintNameRefresh();const i=coupy.findIndex(c=>c[1]===paintColor);if(i>=0){if(englishNameMode)sayEnglish(coupyEnglish[i]);else say(coupy[i][0]);}};
-function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();say(name)};root.append(b)});const selected=coupy.findIndex(c=>c[1]===paintColor);paintNameRefresh()}palette();
+function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();if(englishNameMode)sayEnglish(coupyEnglish[i]);else say(name)};root.append(b)});const selected=coupy.findIndex(c=>c[1]===paintColor);paintNameRefresh()}palette();
 function paintRender(){pctx.fillStyle='white';pctx.fillRect(0,0,600,600);pctx.drawImage(paintLayer,0,0);if(outlineLayer)pctx.drawImage(outlineLayer,0,0,600,600)}
 function snapshot(){paintHistory.push(px.getImageData(0,0,600,600));if(paintHistory.length>16)paintHistory.shift();paintFuture=[]}
 function beginPaint(src){outlineLayer=null;outline=new Image();outline.onload=()=>{const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.drawImage(outline,0,0,600,600);const mask=x.getImageData(0,0,600,600);outlineData=new Uint8ClampedArray(mask.data);for(let k=0;k<mask.data.length;k+=4){const v=(mask.data[k]+mask.data[k+1]+mask.data[k+2])/3;mask.data[k]=mask.data[k+1]=mask.data[k+2]=0;mask.data[k+3]=Math.max(0,Math.min(255,(245-v)*2.8))}x.putImageData(mask,0,0);outlineLayer=c;px.clearRect(0,0,600,600);paintHistory=[];paintFuture=[];paintRender();show('coloring')};outline.src=src}
@@ -43,11 +43,11 @@ function hexRgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
 function drawPaintSegment(a,b,pressure=0.5,pen=false){
  px.save();px.globalCompositeOperation=paintTool==='eraser'?'destination-out':'source-over';
  px.strokeStyle=paintTool==='eraser'?'#000':paintColor;px.fillStyle=px.strokeStyle;
- px.globalAlpha=paintTool==='eraser'?1:(pen?Math.min(.98,.65+.33*Math.max(0,Math.min(1,pressure))):.9);px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
+ px.globalAlpha=paintTool==='eraser'?1:(pen?Math.min(.96,.80+.16*Math.max(0,Math.min(1,pressure))):.9);px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
  px.beginPath();px.moveTo(a.x,a.y);px.lineTo(b.x,b.y);px.stroke();
  px.restore();
 }
-function bucket(x,y){if(!outlineData)return;const w=600,h=600,start=Math.floor(y)*w+Math.floor(x);const blocked=new Uint8Array(w*h);for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const i=yy*w+xx,k=i*4;const v=(outlineData[k]+outlineData[k+1]+outlineData[k+2])/3;if(v<190)blocked[i]=1}
+function bucket(x,y){if(!outlineData)return;const w=600,h=600,start=Math.floor(y)*w+Math.floor(x);const blocked=new Uint8Array(w*h);for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const i=yy*w+xx,k=i*4;const v=(outlineData[k]+outlineData[k+1]+outlineData[k+2])/3;if(v<128)blocked[i]=1}
 // Expand dark strokes to seal minor gaps before flood filling.
 const solid=blocked.slice();for(let yy=2;yy<h-2;yy++)for(let xx=2;xx<w-2;xx++){const i=yy*w+xx;if(!blocked[i])continue;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)solid[i+dy*w+dx]=1}
 if(solid[start])return;const seen=new Uint8Array(w*h),stack=new Int32Array(w*h);let top=0;stack[top++]=start;seen[start]=1;const ids=[];while(top){const i=stack[--top];ids.push(i);const x=i%w,y=(i/w)|0;for(const n of [x>0?i-1:-1,x<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1])if(n>=0&&!seen[n]&&!solid[n]){seen[n]=1;stack[top++]=n}}
@@ -63,7 +63,23 @@ document.querySelectorAll('[data-brush]').forEach(b=>b.onclick=()=>{brush=Number
 $('paintUndo').onclick=()=>{if(!paintHistory.length)return;paintFuture.push(px.getImageData(0,0,600,600));px.putImageData(paintHistory.pop(),0,0);paintRender()};
 $('paintRedo').onclick=()=>{if(!paintFuture.length)return;paintHistory.push(px.getImageData(0,0,600,600));px.putImageData(paintFuture.pop(),0,0);paintRender()};
 $('paintClear').onclick=()=>{if(confirm('ぬった いろを ぜんぶ けす？')){snapshot();px.clearRect(0,0,600,600);paintRender()}};
-$('paintSave').onclick=async()=>{paintRender();const blob=await new Promise(r=>paint.toBlob(r,'image/png'));const file=new File([blob],'ぬりえ.png',{type:'image/png'});try{if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name==='AbortError')return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ぬりえ.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);alert('画像を保存しました。写真アプリに入れるには共有メニューから「画像を保存」を選んでね。')};
+// iPad web apps cannot write directly to Photos. Open the native share sheet,
+// where the user can select “画像を保存”. Do not claim a download is in Photos.
+$('paintSave').onclick=async()=>{
+ paintRender();const blob=await new Promise(r=>paint.toBlob(r,'image/png'));
+ if(!blob){alert('画像を作成できませんでした');return}
+ const file=new File([blob],'あそびランド-ぬりえ.png',{type:'image/png'});
+ try{
+  if(navigator.share&&navigator.canShare?.({files:[file]})){
+   await navigator.share({files:[file]});return;
+  }
+ }catch(e){if(e.name==='AbortError')return;}
+ // Fallback: open the image in a new tab so Safari's image save can be used.
+ const url=URL.createObjectURL(blob);const tab=window.open(url,'_blank');
+ if(!tab){const a=document.createElement('a');a.href=url;a.download=file.name;a.click();}
+ alert('写真に保存するには、画像の共有メニューで「画像を保存」を選んでね。');
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+};
 /* Kana board: units preserve compound sounds as single deletable keys. */
 const basicRows=['あかさたなはまやらわ','いきしちにひみっりを','うくすつぬふむゆる゛','えけせてねへめーれ゜','おこそとのほもよろん'];
 const voicedRows=['がざだばぱ','ぎじぢびぴ','ぐずづぶぷ','げぜでべぺ','ごぞどぼぽ'];

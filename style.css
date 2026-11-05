@@ -113,3 +113,18 @@ html,body,#app{height:100%;overflow:hidden;overscroll-behavior:none}
 /* Marks have a fixed pastel shade even when no previous kana is present */
 #kana .kana-grid button.kana-mark,#kana .kana-grid button.kana-mark:disabled{background:#ffe6c5!important;color:#7b3425!important;opacity:1!important;}
 #kana .kana-grid button.kana-mark:active:not(:disabled){background:#e8bb90!important;}
+
+/* v11: the small っ / ー keys match the pastel shade of the や column, regardless of state. */
+#kana .kana-grid button.kana-special:not(.kana-mark),#kana .kana-grid button.kana-special:not(.kana-mark):disabled{background:#eee0fa!important;color:#6a3b88!important;opacity:1!important;filter:none;}
+#kana .kana-grid button.kana-special:not(.kana-mark):active:not(:disabled){background:#d5b5ee!important;}
+
+/* v12: painting actions stay together below the canvas */
+#coloring .paint-side{position:relative}
+#coloring .paint-bottom-actions{display:flex;justify-content:center;align-items:center;gap:10px;flex-shrink:0;padding:4px 0 6px}
+#coloring .paint-bottom-actions button{font-size:clamp(13px,1.65vw,19px);min-height:42px;padding:7px 15px;border-radius:13px}
+#coloring .paint-stage canvas{height:min(100%,calc(100dvh - 200px))}
+#coloring .color-name-display{position:relative;padding-top:19px}
+#coloring .language-indicator{position:absolute;top:2px;right:6px;display:flex;gap:3px;font-size:11px;line-height:1.1}
+#coloring .language-indicator b{padding:2px 5px;border-radius:5px;color:#888;background:#e8e8e8;border:1px solid #ccc}
+#coloring .language-indicator b.selected{background:#ed638c;color:white;border-color:#d34c76;box-shadow:0 0 0 1px #d34c76}
+@media(max-height:650px) and (orientation:landscape){#coloring .paint-bottom-actions button{min-height:34px;padding:4px 10px;font-size:13px}#coloring .paint-stage canvas{height:min(100%,calc(100dvh - 160px))}}

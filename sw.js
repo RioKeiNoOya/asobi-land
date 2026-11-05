@@ -1,5 +1,5 @@
-const CACHE='asobi-land-v10';
-const ASSETS=['./','./index.html','./style.css?v=9','./app.js?v=9','./extras.js?v=9','./manifest.webmanifest','./icon-192.png','./icon-512.png','./home-park.webp'];
+const CACHE='asobi-land-v11';
+const ASSETS=['./','./index.html','./style.css?v=11','./app.js?v=11','./extras.js?v=11','./manifest.webmanifest','./icon-192.png','./icon-512.png','./home-park.webp'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('asobi-land-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data?.type==='SKIP_WAITING')self.skipWaiting()});
