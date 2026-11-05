@@ -46,3 +46,33 @@ button,img{ -webkit-user-drag:none }
 /* Block Safari native drag/callouts while keeping puzzle Pointer Events. */
 #game,#game *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-user-drag:none!important;}
 #game .piece,#game .slot,#game .tray,#game .board{touch-action:none!important;}
+
+/* v5: fixed non-scrolling child game screens, galleries scroll only when needed */
+html,body,#app{height:100%;overflow:hidden;overscroll-behavior:none}
+#home,#difficulty,#game,#coloring,#kana,#traceMenu,#tracing{overflow:hidden!important;overscroll-behavior:none;touch-action:pan-x pan-y}
+#coloring,#tracing,#game{touch-action:none}
+#coloring canvas,#tracing canvas{touch-action:none}
+.trace-confetti-layer{position:absolute;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+#tracing{position:relative}
+.trace-confetti{position:absolute;top:-40px;font-size:22px;animation:trace-fall 2.7s linear forwards}
+@keyframes trace-fall{to{transform:translateY(110vh) rotate(720deg);opacity:.1}}
+
+/* v6: colorful kana keys and the わ・を・゛・゜・ん row */
+#kana .kana-grid{min-height:0;flex:1 1 0}
+#kana .kana-grid button:not(.kana-special):not(:disabled){background:var(--kana-color,#ffcf6c)}
+#kana .kana-grid button:not(.kana-special):active{filter:brightness(.78)}
+#kana .kana-grid button:nth-child(10n + 1){--kana-color:#ffb7b7}
+#kana .kana-grid button:nth-child(10n + 2){--kana-color:#ffdb9e}
+#kana .kana-grid button:nth-child(10n + 3){--kana-color:#fff0a5}
+#kana .kana-grid button:nth-child(10n + 4){--kana-color:#c9e8ad}
+#kana .kana-grid button:nth-child(10n + 5){--kana-color:#a9e5db}
+#kana .kana-grid button:nth-child(10n + 6){--kana-color:#b4dbff}
+#kana .kana-grid button:nth-child(10n + 7){--kana-color:#c7c8ff}
+#kana .kana-grid button:nth-child(10n + 8){--kana-color:#e1c4fa}
+#kana .kana-grid button:nth-child(10n + 9){--kana-color:#ffc6df}
+#kana .kana-grid button:nth-child(10n){--kana-color:#ffd4ac}
+#kana .kana-wa-row{display:flex;gap:7px;justify-content:center;align-items:stretch;flex:0 0 auto;height:clamp(34px,7vh,49px);margin-top:5px}
+#kana .kana-wa-row button{min-width:clamp(42px,8vw,78px);padding:2px 10px;border:3px solid white;border-radius:11px;background:#ffd7a2;font-size:clamp(18px,2.6vw,30px)}
+#kana .kana-wa-row .kana-mark{background:#f8a6d1;color:#742956}
+#kana .kana-wa-row button:active{filter:brightness(.77)}
+#kana .kana-wa-row button:disabled{opacity:.38}

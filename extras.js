@@ -7,7 +7,13 @@ const exId=()=>String(Date.now())+'-'+Math.random();
 const loadPicture=file=>new Promise((res,rej)=>{const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(url);res(im)};im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('画像を開けません'))};im.src=url});
 function normalizedImage(im,threshold=false){const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='white';x.fillRect(0,0,600,600);const scale=Math.min(560/im.width,560/im.height);x.drawImage(im,(600-im.width*scale)/2,(600-im.height*scale)/2,im.width*scale,im.height*scale);if(threshold){const data=x.getImageData(0,0,600,600);for(let i=0;i<data.data.length;i+=4){const g=.299*data.data[i]+.587*data.data[i+1]+.114*data.data[i+2];const v=g<190?0:255;data.data[i]=data.data[i+1]=data.data[i+2]=v}x.putImageData(data,0,0)}return c.toDataURL('image/png')}
 function makeTile(root,src,fn,remove){const b=document.createElement('button');b.className='tile';const im=new Image();im.src=src;im.alt='おてほん';b.append(im);b.onclick=fn;if(remove){const del=document.createElement('button');del.className='delete';del.textContent='×';del.onclick=async e=>{e.stopPropagation();if(confirm('この おてほんを けす？'))await remove()};b.append(del)}root.append(b)}
-function simpleArt(type){const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,600,600);x.strokeStyle='#111';x.lineWidth=13;x.lineJoin='round';x.lineCap='round';x.beginPath();if(type==='flower'){for(let i=0;i<6;i++){const a=i*Math.PI/3;x.ellipse(300+100*Math.cos(a),240+100*Math.sin(a),68,68,0,0,Math.PI*2)}x.moveTo(300,300);x.lineTo(300,510);x.moveTo(300,440);x.quadraticCurveTo(190,370,185,420);x.quadraticCurveTo(220,485,300,440);x.stroke();x.beginPath();x.arc(300,240,53,0,7)}else if(type==='sun'){x.arc(300,300,115,0,7);for(let i=0;i<12;i++){const a=i*Math.PI/6;x.moveTo(300+155*Math.cos(a),300+155*Math.sin(a));x.lineTo(300+205*Math.cos(a),300+205*Math.sin(a))}}else if(type==='house'){x.moveTo(130,275);x.lineTo(300,110);x.lineTo(470,275);x.moveTo(165,275);x.lineTo(165,480);x.lineTo(435,480);x.lineTo(435,275);x.moveTo(255,480);x.lineTo(255,350);x.lineTo(345,350);x.lineTo(345,480)}else if(type==='car'){x.rect(115,280,370,140);x.moveTo(190,280);x.lineTo(245,205);x.lineTo(380,205);x.lineTo(435,280);x.moveTo(215,420);x.arc(215,420,40,0,7);x.moveTo(420,420);x.arc(420,420,40,0,7)}else{x.arc(300,300,175,0,7)}x.stroke();return c.toDataURL('image/png')}
+function simpleArt(type){const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,600,600);x.strokeStyle='#111';x.lineWidth=13;x.lineJoin='round';x.lineCap='round';x.beginPath();if(type==='flower'){// Five distinct petals, a round center, a curved stem and two leaves.
+ for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;const cx=300+79*Math.cos(a),cy=235+79*Math.sin(a);x.moveTo(cx+61,cy);x.arc(cx,cy,61,0,Math.PI*2)}
+ x.moveTo(300,235);x.arc(300,235,53,0,Math.PI*2);
+ x.moveTo(300,288);x.bezierCurveTo(315,355,282,425,305,530);
+ x.moveTo(300,435);x.bezierCurveTo(255,370,207,385,214,435);x.bezierCurveTo(232,473,280,463,300,435);
+ x.moveTo(298,465);x.bezierCurveTo(340,397,392,409,381,458);x.bezierCurveTo(365,485,328,485,298,465);
+}else if(type==='sun'){x.arc(300,300,115,0,7);for(let i=0;i<12;i++){const a=i*Math.PI/6;x.moveTo(300+155*Math.cos(a),300+155*Math.sin(a));x.lineTo(300+205*Math.cos(a),300+205*Math.sin(a))}}else if(type==='house'){x.moveTo(130,275);x.lineTo(300,110);x.lineTo(470,275);x.moveTo(165,275);x.lineTo(165,480);x.lineTo(435,480);x.lineTo(435,275);x.moveTo(255,480);x.lineTo(255,350);x.lineTo(345,350);x.lineTo(345,480)}else if(type==='car'){x.rect(115,280,370,140);x.moveTo(190,280);x.lineTo(245,205);x.lineTo(380,205);x.lineTo(435,280);x.moveTo(215,420);x.arc(215,420,40,0,7);x.moveTo(420,420);x.arc(420,420,40,0,7)}else{x.arc(300,300,175,0,7)}x.stroke();return c.toDataURL('image/png')}
 function kanaArt(ch){const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,600,600);x.font='440px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#111';x.fillText(ch,300,310);return c.toDataURL('image/png')}
 const colorPreset=[['はな',()=>simpleArt('flower')],['たいよう',()=>simpleArt('sun')],['おうち',()=>simpleArt('house')],['くるま',()=>simpleArt('car')],['まる',()=>simpleArt('circle')]];
 async function refreshExtra(){if(!exdb)return;colorItems=await exOp('color','readonly',s=>s.getAll());traceItems=await exOp('trace','readonly',s=>s.getAll());renderColors();renderTraceManage()}
@@ -18,37 +24,40 @@ $('colorFile').onchange=async e=>{const file=e.target.files[0];e.target.value=''
 const paint=$('paintCanvas'),pctx=paint.getContext('2d'),paintLayer=document.createElement('canvas'),px=paintLayer.getContext('2d',{willReadFrequently:true});paintLayer.width=paintLayer.height=600;
 let outline=new Image(),outlineLayer=null,outlineData=null,paintTool='pen',paintColor='#e93432',brush=4,paintHistory=[],paintFuture=[],painting=false,lastPaint=null,paintPointer=null,strokePoints=[],strokeBase=null;
 const coupy=[['しろ','#ffffff'],['きいろ','#ffe23c'],['だいだいいろ','#f28a29'],['あか','#e93432'],['ももいろ','#f6a1bb'],['うすだいだい','#f4c59d'],['ちゃいろ','#8e523a'],['こげちゃいろ','#573d34'],['きみどり','#9bc947'],['みどり','#269b50'],['ふかみどり','#156c45'],['みずいろ','#7dd4e7'],['あお','#2876cb'],['ぐんじょういろ','#334aa5'],['むらさき','#8a59ad'],['あかむらさき','#b75493'],['はいいろ','#a0a0a0'],['くろ','#202020'],['おうどいろ','#c6a050'],['やまぶきいろ','#f5ba2f'],['しゅいろ','#ed5837'],['うすむらさき','#c6a2d8'],['あいいろ','#334e80'],['ねずみいろ','#777b7c']];
-let speakEnabled=true;
-function say(t){if(!speakEnabled||!('speechSynthesis'in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=1;speechSynthesis.speak(u)}catch(e){}}
+let speakEnabled=true;let speechQueueToken=0;
+function say(t){if(!speakEnabled||!('speechSynthesis'in window))return;try{const token=++speechQueueToken;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=.92;u.pitch=1;const voices=speechSynthesis.getVoices();const jp=voices.find(v=>v.lang==='ja-JP'&&v.localService)||voices.find(v=>v.lang.startsWith('ja'));if(jp)u.voice=jp; // A tiny deferred enqueue avoids iOS cancel/speak races.
+ setTimeout(()=>{if(token===speechQueueToken&&speakEnabled)speechSynthesis.speak(u)},75)}catch(e){}}
 function palette(){const root=$('palette');root.replaceChildren();coupy.forEach(([name,hex],i)=>{const b=document.createElement('button');b.className='swatch'+(hex===paintColor?' chosen':'');b.style.background=hex;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{paintColor=hex;palette();say(name)};root.append(b)})}palette();
 function paintRender(){pctx.fillStyle='white';pctx.fillRect(0,0,600,600);pctx.drawImage(paintLayer,0,0);if(outlineLayer)pctx.drawImage(outlineLayer,0,0,600,600)}
 function snapshot(){paintHistory.push(px.getImageData(0,0,600,600));if(paintHistory.length>16)paintHistory.shift();paintFuture=[]}
 function beginPaint(src){outlineLayer=null;outline=new Image();outline.onload=()=>{const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.drawImage(outline,0,0,600,600);const mask=x.getImageData(0,0,600,600);outlineData=new Uint8ClampedArray(mask.data);for(let k=0;k<mask.data.length;k+=4){const v=(mask.data[k]+mask.data[k+1]+mask.data[k+2])/3;mask.data[k]=mask.data[k+1]=mask.data[k+2]=0;mask.data[k+3]=v<190?255:0}x.putImageData(mask,0,0);outlineLayer=c;px.clearRect(0,0,600,600);paintHistory=[];paintFuture=[];paintRender();show('coloring')};outline.src=src}
 function pointOnCanvas(e,c){const r=c.getBoundingClientRect();return{x:Math.max(0,Math.min(599,(e.clientX-r.left)*600/r.width)),y:Math.max(0,Math.min(599,(e.clientY-r.top)*600/r.height))}}
 function hexRgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
+// Consistent stroke preview/final appearance: render a continuous path from sampled points.
+// Pencil pressure is intentionally not applied because iOS may report different pressure
+// on the final pointer event, causing a visible jump at pen-up.
 function drawPaint(a,b,pressure){
  if(!strokeBase)return;
- strokePoints.push({x:b.x,y:b.y,p:pressure});
- px.putImageData(strokeBase,0,0);
- px.save();
+ const prev=strokePoints[strokePoints.length-1];if(!prev||Math.hypot(prev.x-b.x,prev.y-b.y)>.15)strokePoints.push({x:b.x,y:b.y});
+ px.putImageData(strokeBase,0,0);px.save();
  px.globalCompositeOperation=paintTool==='eraser'?'destination-out':'source-over';
- px.strokeStyle=paintTool==='eraser'?'#000':paintColor;
- px.fillStyle=px.strokeStyle;
- px.globalAlpha=paintTool==='eraser'?1:(pressure===null?.72:Math.max(.48,Math.min(.95,.48+Math.pow(Math.max(0,pressure),.55)*.55))); // pressure boosted for light Pencil strokes
- px.lineWidth=brush*ePressure(pressure);px.lineCap='round';px.lineJoin='round';
- px.beginPath();const first=strokePoints[0];px.moveTo(first.x,first.y);
- if(strokePoints.length===1){px.arc(first.x,first.y,Math.max(.5,px.lineWidth/2),0,Math.PI*2);px.fill()}
- else{for(let i=1;i<strokePoints.length;i++){const prev=strokePoints[i-1],cur=strokePoints[i];const midX=(prev.x+cur.x)/2,midY=(prev.y+cur.y)/2;px.quadraticCurveTo(prev.x,prev.y,midX,midY)}const last=strokePoints[strokePoints.length-1];px.lineTo(last.x,last.y);px.stroke()}
+ px.strokeStyle=paintTool==='eraser'?'#000':paintColor;px.fillStyle=px.strokeStyle;
+ px.globalAlpha=paintTool==='eraser'?1:.85;
+ px.lineWidth=brush;px.lineCap='round';px.lineJoin='round';
+ if(strokePoints.length===1){const pt=strokePoints[0];px.beginPath();px.arc(pt.x,pt.y,brush/2,0,Math.PI*2);px.fill()}
+ else{px.beginPath();px.moveTo(strokePoints[0].x,strokePoints[0].y);for(let i=1;i<strokePoints.length;i++){const q=strokePoints[i];px.lineTo(q.x,q.y)}px.stroke()}
  px.restore();paintRender()
 }
-function ePressure(p){return p===null?1:Math.max(.8,Math.min(1.9,.8+Math.pow(Math.max(0,p),.6)*1.1))}
 function bucket(x,y){if(!outlineData)return;const w=600,h=600,start=Math.floor(y)*w+Math.floor(x);const blocked=new Uint8Array(w*h);for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const i=yy*w+xx,k=i*4;const v=(outlineData[k]+outlineData[k+1]+outlineData[k+2])/3;if(v<190)blocked[i]=1}
 // Expand dark strokes to seal minor gaps before flood filling.
 const solid=blocked.slice();for(let yy=2;yy<h-2;yy++)for(let xx=2;xx<w-2;xx++){const i=yy*w+xx;if(!blocked[i])continue;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)solid[i+dy*w+dx]=1}
 if(solid[start])return;const seen=new Uint8Array(w*h),stack=new Int32Array(w*h);let top=0;stack[top++]=start;seen[start]=1;const ids=[];while(top){const i=stack[--top];ids.push(i);const x=i%w,y=(i/w)|0;for(const n of [x>0?i-1:-1,x<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1])if(n>=0&&!seen[n]&&!solid[n]){seen[n]=1;stack[top++]=n}}
-const d=px.getImageData(0,0,w,h),rgb=hexRgb(paintColor);for(const i of ids){const k=i*4;d.data[k]=rgb[0];d.data[k+1]=rgb[1];d.data[k+2]=rgb[2];d.data[k+3]=255}px.putImageData(d,0,0);paintRender()}
+// Extend the filled region by 3 pixels under the black outline, without crossing the sealed boundary.
+const filled=new Uint8Array(w*h);for(const i of ids)filled[i]=1;
+const expanded=ids.slice();for(const i of ids){const xx=i%w,yy=(i/w)|0;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){if(dx*dx+dy*dy>9)continue;const nx=xx+dx,ny=yy+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;if(!filled[j]){filled[j]=1;expanded.push(j)}}}
+const d=px.getImageData(0,0,w,h),rgb=hexRgb(paintColor);for(const i of expanded){const k=i*4;d.data[k]=rgb[0];d.data[k+1]=rgb[1];d.data[k+2]=rgb[2];d.data[k+3]=255}px.putImageData(d,0,0);paintRender()}
 paint.addEventListener('pointerdown',e=>{if(painting)return;e.preventDefault();paint.setPointerCapture(e.pointerId);painting=true;paintPointer=e.pointerId;const p=pointOnCanvas(e,paint);snapshot();if(paintTool==='bucket'){bucket(p.x,p.y);painting=false;return}lastPaint=p;strokeBase=px.getImageData(0,0,600,600);strokePoints=[{x:p.x,y:p.y,p:e.pointerType==='pen'?e.pressure:null}];drawPaint(p,p,e.pointerType==='pen'?e.pressure:null)});
-paint.addEventListener('pointermove',e=>{if(!painting||e.pointerId!==paintPointer||!lastPaint)return;e.preventDefault();const p=pointOnCanvas(e,paint);drawPaint(lastPaint,p,e.pointerType==='pen'?e.pressure:null);lastPaint=p});
+paint.addEventListener('pointermove',e=>{if(!painting||e.pointerId!==paintPointer||!lastPaint)return;e.preventDefault();const events=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[e];for(const ev of events){const p=pointOnCanvas(ev,paint);drawPaint(lastPaint,p,null);lastPaint=p}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(t=>paint.addEventListener(t,e=>{if(e.pointerId===paintPointer){painting=false;lastPaint=null;paintPointer=null;strokeBase=null;strokePoints=[]}}));
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{paintTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('chosen',x===b))});
 document.querySelectorAll('[data-brush]').forEach(b=>b.onclick=()=>{brush=Number(b.dataset.brush);document.querySelectorAll('[data-brush]').forEach(x=>x.classList.toggle('chosen',x===b))});
@@ -57,17 +66,23 @@ $('paintRedo').onclick=()=>{if(!paintFuture.length)return;paintHistory.push(px.g
 $('paintClear').onclick=()=>{if(confirm('ぬった いろを ぜんぶ けす？')){snapshot();px.clearRect(0,0,600,600);paintRender()}};
 $('paintSave').onclick=async()=>{paintRender();const blob=await new Promise(r=>paint.toBlob(r,'image/png'));const file=new File([blob],'ぬりえ.png',{type:'image/png'});try{if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name==='AbortError')return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ぬりえ.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);alert('画像を保存しました。写真アプリに入れるには共有メニューから「画像を保存」を選んでね。')};
 /* Kana board: units preserve compound sounds as single deletable keys. */
-const basicRows=['あかさたなはまやらわ','いきしちにひみっり　','うくすつぬふむゆるん','えけせてねへめーれ　','おこそとのほもよろを'];
+const basicRows=['あかさたなはまやら　','いきしちにひみっり　','うくすつぬふむゆる　','えけせてねへめーれ　','おこそとのほもよろ　'];
 const voicedRows=['がざだばぱ','ぎじぢびぴ','ぐずづぶぷ','げぜでべぺ','ごぞどぼぽ'];
 const combos=['きゃ','きゅ','きょ','しゃ','しゅ','しょ','ちゃ','ちゅ','ちょ','にゃ','にゅ','にょ','ひゃ','ひゅ','ひょ','みゃ','みゅ','みょ','りゃ','りゅ','りょ','ぎゃ','ぎゅ','ぎょ','じゃ','じゅ','じょ','びゃ','びゅ','びょ','ぴゃ','ぴゅ','ぴょ','ぢゃ','ぢゅ','ぢょ'];
 let kanaTab='basic',katakana=false,kanaUnits=[],kanaRecording=false,recognition=null;
 const toKata=s=>s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+96));const toHira=s=>s.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));
 function kanaValue(s){return katakana?toKata(s):toHira(s)}
 function kanaString(){return kanaUnits.map(kanaValue).join('')}
-function kanaRefresh(){const s=kanaString();$('kanaText').textContent=s;$('kanaSmall').textContent=kanaValue('っ');$('kanaScript').textContent=katakana?'カタカナ':'ひらがな';$('kanaSound').textContent=speakEnabled?'🔊':'🔇';$('kanaStatus').textContent=(Array.from(s).length>=20?'20もじまでだよ':'')+(kanaRecording?' 🎤 ききとりちゅう':'');document.querySelectorAll('#kanaGrid button,#kanaSmall,#kanaLong').forEach(b=>b.disabled=kanaRecording||Array.from(s).length>=20)}
+const kanaVoicedMap={'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご','さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ','た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど','は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ'};
+const kanaSemiMap={'は':'ぱ','ひ':'ぴ','ふ':'ぷ','へ':'ぺ','ほ':'ぽ'};
+const kanaUnvoiceMap=Object.fromEntries(Object.entries(kanaVoicedMap).map(([k,v])=>[v,k]));
+const kanaUnsemiMap=Object.fromEntries(Object.entries(kanaSemiMap).map(([k,v])=>[v,k]));
+function kanaMark(mark){if(kanaRecording||!kanaUnits.length)return;const last=kanaUnits[kanaUnits.length-1],chars=Array.from(last),tail=chars.pop();if(!tail)return;let result;if(mark==='゛'){result=kanaVoicedMap[tail]||kanaUnvoiceMap[tail]||kanaVoicedMap[kanaUnsemiMap[tail]];}else{result=kanaSemiMap[tail]||kanaUnsemiMap[tail]||kanaSemiMap[kanaUnvoiceMap[tail]];}if(!result)return;chars.push(result);kanaUnits[kanaUnits.length-1]=chars.join('');kanaRefresh();say(kanaValue(result))}
+function kanaRefresh(){const s=kanaString();$('kanaText').textContent=s;$('kanaSmall').textContent=kanaValue('っ');$('kanaWa').textContent=kanaValue('わ');$('kanaWo').textContent=kanaValue('を');$('kanaN').textContent=kanaValue('ん');document.querySelector('.kana-wa-row').classList.toggle('hidden',kanaTab!=='basic');$('kanaScript').textContent=katakana?'カタカナ':'ひらがな';$('kanaSound').textContent=speakEnabled?'🔊':'🔇';$('kanaStatus').textContent=(Array.from(s).length>=20?'20もじまでだよ':'')+(kanaRecording?' 🎤 ききとりちゅう':'');document.querySelectorAll('#kanaGrid button,#kanaSmall,#kanaLong,#kanaWa,#kanaWo,#kanaN').forEach(b=>b.disabled=kanaRecording||Array.from(s).length>=20);document.querySelectorAll('#kanaDakuten,#kanaHandakuten').forEach(b=>b.disabled=kanaRecording||!kanaUnits.length)}
 function kanaAdd(s){if(kanaRecording)return;const remaining=20-Array.from(kanaString()).length;if(remaining<=0)return;const part=Array.from(s).slice(0,remaining).join('');if(!part)return;kanaUnits.push(toHira(part));kanaRefresh();say(kanaValue(part))}
 function renderKana(){const root=$('kanaGrid');root.replaceChildren();const values=kanaTab==='basic'?basicRows.join('').split(''):kanaTab==='voiced'?voicedRows.map(r=>r.padEnd(10,'　')).join('').split(''):combos;values.forEach(ch=>{const b=document.createElement('button');if(ch==='　'){b.disabled=true;b.textContent='';}else{b.textContent=kanaValue(ch);if(ch==='っ'||ch==='ー')b.classList.add('kana-special');b.onclick=()=>kanaAdd(ch)}root.append(b)});document.querySelectorAll('[data-kana-tab]').forEach(b=>b.classList.toggle('chosen',b.dataset.kanaTab===kanaTab));kanaRefresh()}
 document.querySelectorAll('[data-kana-tab]').forEach(b=>b.onclick=()=>{kanaTab=b.dataset.kanaTab;renderKana()});
+['わ','を','ん'].forEach((ch,i)=>{$(['kanaWa','kanaWo','kanaN'][i]).onclick=()=>kanaAdd(ch)});$('kanaDakuten').onclick=()=>kanaMark('゛');$('kanaHandakuten').onclick=()=>kanaMark('゜');
 $('kanaScript').onclick=()=>{katakana=!katakana;renderKana()};$('kanaSmall').onclick=()=>kanaAdd('っ');$('kanaLong').onclick=()=>kanaAdd('ー');$('kanaDelete').onclick=()=>{kanaUnits.pop();kanaRefresh()};$('kanaClear').onclick=()=>{kanaUnits=[];kanaRefresh()};$('kanaPlay').onclick=()=>say(kanaString());$('kanaSound').onclick=()=>{speakEnabled=!speakEnabled;if(!speakEnabled)speechSynthesis?.cancel();kanaRefresh()};
 $('kanaMic').onclick=()=>{if(kanaRecording){recognition?.stop();kanaRecording=false;kanaRefresh();return}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('このiPadのブラウザは音声入力に対応していません');return}recognition=new SR();recognition.lang='ja-JP';recognition.interimResults=false;recognition.continuous=true;recognition.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){const txt=e.results[i][0].transcript;const remaining=20-Array.from(kanaString()).length;const part=Array.from(txt).slice(0,remaining).join('');if(part)kanaUnits.push(toHira(part));kanaRefresh();if(remaining<=Array.from(txt).length)recognition.stop()}}};recognition.onerror=e=>{$('kanaStatus').textContent='マイクが つかえません: '+e.error};recognition.onend=()=>{kanaRecording=false;kanaRefresh()};try{recognition.start();kanaRecording=true;kanaRefresh()}catch(e){alert('マイクを開始できません')}};
 /* Trace levels. Draw only on Apple Pencil pointer events. */
@@ -91,7 +106,10 @@ function traceJudge(){
  const ratio=targets?matched/targets:0;const good=ratio>=.48;
  $('traceStatus').textContent=good?'🌟 できたね！':'💛 あとちょっと！';
  traceChime(good);
+ if(good){traceCelebrate();tracePraise()}
 }
+function tracePraise(){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('わあ！ ぱちぱち！');u.lang='ja-JP';u.rate=.9;setTimeout(()=>speechSynthesis.speak(u),120)}catch(e){}}
+function traceCelebrate(){const area=$('tracing');const layer=document.createElement('div');layer.className='trace-confetti-layer';const shapes=['🎊','✨','🎉','🟡','🩷','💛','🟢','🔵'];for(let i=0;i<46;i++){const bit=document.createElement('span');bit.className='trace-confetti';bit.textContent=shapes[i%shapes.length];bit.style.left=(i*37%100)+'%';bit.style.animationDelay=(i%11*.08)+'s';bit.style.animationDuration=(2+(i%5)*.2)+'s';layer.append(bit)}area.append(layer);setTimeout(()=>layer.remove(),4000)}
 function traceChime(good){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=new A();const notes=good?[523.25,659.25,783.99]:[392,440];notes.forEach((hz,i)=>{const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+i*.13;o.type='sine';o.frequency.value=hz;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.11,t+.018);g.gain.exponentialRampToValueAtTime(.0001,t+.22);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.24)});setTimeout(()=>a.close(),850)}catch(e){}}
 $('traceDone').onclick=traceJudge;
 $('traceReset').onclick=traceDrawBase;$('traceNext').onclick=()=>{traceIndex=(traceIndex+1)%traceOptions.length;traceStart()};
