@@ -76,3 +76,14 @@ html,body,#app{height:100%;overflow:hidden;overscroll-behavior:none}
 #kana .kana-wa-row .kana-mark{background:#f8a6d1;color:#742956}
 #kana .kana-wa-row button:active{filter:brightness(.77)}
 #kana .kana-wa-row button:disabled{opacity:.38}
+
+/* v7: large paint controls and integrated tenth kana column */
+#coloring .paint-tools{gap:8px;align-items:center;justify-content:center;padding:4px 0 7px}
+#coloring .paint-tools>button{min-height:51px;min-width:57px;padding:10px 13px;font-size:clamp(14px,1.8vw,19px);border-radius:14px}
+#coloring .brush-buttons{gap:7px}
+#coloring .brush-choice{width:52px;height:52px;min-width:52px;min-height:52px;border-radius:13px}
+#coloring .brush-dot{max-width:30px;max-height:30px}
+#kana .kana-grid{grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));min-height:0}
+#kana .kana-grid .kana-mark{background:#f8a6d1!important;color:#742956}
+#kana .kana-grid .kana-mark:disabled{opacity:.5}
+@media(max-height:650px) and (orientation:landscape){#coloring .paint-tools>button{min-height:43px;padding:7px 9px;font-size:14px}#coloring .brush-choice{width:45px;height:45px;min-width:45px;min-height:45px}}
