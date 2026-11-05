@@ -24,7 +24,17 @@ function tone(correct){try{audio??=new (window.AudioContext||window.webkitAudioC
 function complete(){if(screen!=='game'||placed.size!==gridSize*gridSize)return;$('doneImg').src=current.data;$('complete').classList.remove('hidden');const box=$('confetti');box.replaceChildren();for(let i=0;i<55;i++){const el=document.createElement('span');el.className='confetti';el.textContent=['⭐','✨','🎉','💛','❤️'][i%5];el.style.left=Math.random()*100+'%';el.style.animationDelay=Math.random()*.7+'s';box.append(el)}tone(true);setTimeout(()=>tone(true),180)}
 $('start').onclick=()=>show('gallery');$('back').onclick=goBack;$('reset').onclick=()=>{if(current)startGame(current)};$('again').onclick=()=>{$('complete').classList.add('hidden');startGame(current)};$('next').onclick=()=>{$('complete').classList.add('hidden');show('gallery')};
 const hintBtn=$('hint');hintBtn.addEventListener('pointerdown',e=>{e.preventDefault();setHint(true);hintBtn.setPointerCapture(e.pointerId)});['pointerup','pointercancel','lostpointercapture','pointerleave'].forEach(ev=>hintBtn.addEventListener(ev,clearHint));hintBtn.addEventListener('contextmenu',e=>e.preventDefault());
-const lock=$('lock');lock.addEventListener('pointerdown',e=>{e.preventDefault();lock.setPointerCapture(e.pointerId);lockTimer=setTimeout(()=>{lockTimer=null,gridSize=3,selectedImage=null;show('parent')},3000)});['pointerup','pointercancel','lostpointercapture','pointerleave'].forEach(ev=>lock.addEventListener(ev,()=>{if(lockTimer){clearTimeout(lockTimer);lockTimer=null}}));lock.addEventListener('contextmenu',e=>e.preventDefault());
+const lock=$('lock');
+function cancelLock(){if(lockTimer!==null){clearTimeout(lockTimer);lockTimer=null}}
+function openParent(){cancelLock();gridSize=3;selectedImage=null;show('parent')}
+lock.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();cancelLock();lockTimer=setTimeout(openParent,3000)});
+['pointerup','pointercancel'].forEach(ev=>lock.addEventListener(ev,cancelLock));
+lock.addEventListener('contextmenu',e=>e.preventDefault());
+lock.addEventListener('dragstart',e=>e.preventDefault());
+lock.addEventListener('selectstart',e=>e.preventDefault());
+// Safari can cancel touch pointer events on long presses; use native touch events as fallback.
+lock.addEventListener('touchstart',e=>{e.preventDefault();cancelLock();lockTimer=setTimeout(openParent,3000)},{passive:false});
+['touchend','touchcancel'].forEach(ev=>lock.addEventListener(ev,cancelLock,{passive:true}));
 let cropImage=null,cropScale=1,cropX=0,cropY=0,cropPointers=new Map(),lastPinch=0,lastPoint=null;const canvas=$('cropCanvas'),ctx=canvas.getContext('2d');
 function cropDraw(){if(!cropImage)return;const s=420;ctx.clearRect(0,0,s,s);const base=Math.max(s/cropImage.width,s/cropImage.height);const w=cropImage.width*base*cropScale,h=cropImage.height*base*cropScale;cropX=Math.min(Math.max(cropX,s-w),0);cropY=Math.min(Math.max(cropY,s-h),0);ctx.drawImage(cropImage,cropX,cropY,w,h);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(1,1,418,418)}
 $('file').onchange=async e=>{const f=e.target.files?.[0];e.target.value='';if(!f)return;if(!f.type.startsWith('image/')){alert('画像を選んでね');return}const url=URL.createObjectURL(f);try{const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});cropImage=img;cropScale=1;const base=Math.max(420/img.width,420/img.height);cropX=(420-img.width*base)/2;cropY=(420-img.height*base)/2;$('zoom').value='1';$('cropModal').classList.remove('hidden');cropDraw()}catch(err){alert('画像を読み込めませんでした')}finally{URL.revokeObjectURL(url)}};
