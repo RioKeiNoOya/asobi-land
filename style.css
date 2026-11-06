@@ -131,3 +131,14 @@ html,body,#app{height:100%;overflow:hidden;overscroll-behavior:none}
 
 /* v13: home games and stable touch layout */
 .game-menu{grid-template-columns:repeat(4,minmax(0,1fr))!important;align-items:stretch}.game-tile{min-height:90px;aspect-ratio:auto;touch-action:manipulation}.kana-top{min-height:56px;flex-shrink:0}.kana-compose{min-height:44px;max-height:44px;overflow:hidden}.kana-grid{min-height:0}#palette button{touch-action:manipulation}#paintSave{touch-action:none;user-select:none}@media(max-width:680px){.game-menu{grid-template-columns:repeat(2,minmax(0,1fr))!important}.game-tile{min-height:92px}}
+
+/* v14: visible navigation below the illustrated four-game home screen */
+#home{flex-direction:column;justify-content:center;gap:7px;overflow-y:auto;overflow-x:hidden;padding:5px 7px 9px!important}
+#home .hero{flex:0 0 auto;width:min(100%,calc((100dvh - 160px)*1648/928));max-width:100%;min-height:0}
+#home .new-game-strip{flex:0 0 auto;display:flex;justify-content:center;align-items:stretch;gap:clamp(5px,1.5vw,13px);width:min(100%,930px);margin:0 auto}
+#home .new-game-button{display:flex;align-items:center;justify-content:center;gap:8px;flex:1;min-width:0;padding:clamp(7px,1.3vw,12px);border:3px solid #fff;border-radius:19px;color:#fff;font-weight:900;font-size:clamp(22px,3.2vw,34px);line-height:1.1;text-decoration:none;box-shadow:0 4px 0 #a36d55;touch-action:manipulation}
+#home .new-game-button span{font-size:clamp(12px,1.8vw,21px);text-align:center}
+#home .new-game-button.soft{background:#f27b98}#home .new-game-button.shaved{background:#51a8d7}#home .new-game-button.shape{background:#54b88b}
+#home .new-game-button:active{filter:brightness(.85);transform:translateY(2px)}
+@media(orientation:portrait){#home{justify-content:flex-start}#home .hero{width:100%;max-width:100%}#home .new-game-strip{flex-direction:column;max-width:440px}#home .new-game-button{min-height:56px}}
+@media(max-height:520px) and (orientation:landscape){#home .hero{width:min(100%,calc((100dvh - 122px)*1648/928))}#home .new-game-button{padding:5px;font-size:21px}#home .new-game-button span{font-size:13px}}
